@@ -3,26 +3,35 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Firebase App</title>
+  <title>Reactive Firebase App</title>
 </head>
 <body>
 
-  <h2>Форма отправки данных</h2>
+  <h2>🔥 Реактивная лента (Real-time)</h2>
 
-  <form id="requestForm">
-    <input type="text" id="name" placeholder="Ваше имя" required><br><br>
-    <input type="email" id="email" placeholder="Ваш Email" required><br><br>
-    <button type="submit">Отправить</button>
-  </form>
+  <input id="text" placeholder="Напиши пост">
+  <button onclick="addPost()">Отправить</button>
 
-  <p id="status"></p>
+  <hr>
+
+  <div id="feed"></div>
 
   <script type="module">
-    // 🔹 Импорт Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      doc,
+      updateDoc,
+      increment,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 🔹 ТВОЯ конфигурация
+    // 🔹 ТВОИ ДАННЫЕ
     const firebaseConfig = {
       apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
       authDomain: "plas-e449b.firebaseapp.com",
@@ -32,35 +41,57 @@
       appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
     };
 
-    // 🔹 Инициализация
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 🔹 Работа с формой
-    const form = document.getElementById("requestForm");
-    const status = document.getElementById("status");
+    const feed = document.getElementById("feed");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    // 🔥 ДОБАВИТЬ ПОСТ
+    window.addPost = async function () {
+      const text = document.getElementById("text").value;
 
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
+      if (!text) return;
 
-      try {
-        await addDoc(collection(db, "requests"), {
-          name: name,
-          email: email,
-          createdAt: new Date()
-        });
+      await addDoc(collection(db, "posts"), {
+        text: text,
+        likes: 0,
+        timestamp: serverTimestamp()
+      });
 
-        status.textContent = "✅ Данные успешно отправлены!";
-        form.reset();
+      document.getElementById("text").value = "";
+    };
 
-      } catch (error) {
-        console.error("Ошибка:", error);
-        status.textContent = "❌ Ошибка отправки!";
-      }
+    // 🔥 REAL-TIME ЛЕНТА
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+      feed.innerHTML = "";
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <p>${data.text}</p>
+          <button onclick="likePost('${docSnap.id}', ${data.likes})">
+            ❤️ ${data.likes}
+          </button>
+          <hr>
+        `;
+
+        feed.appendChild(div);
+      });
     });
+
+    // 🔥 ЛАЙК (атомарный increment)
+    window.likePost = async function (id) {
+      const ref = doc(db, "posts", id);
+
+      await updateDoc(ref, {
+        likes: increment(1)
+      });
+    };
+
   </script>
 
 </body>
