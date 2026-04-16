@@ -1,99 +1,104 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Reactive Firebase App</title>
+  <title>Reactive Firebase Feed</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .post { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    button { cursor: pointer; }
+  </style>
 </head>
 <body>
 
-  <h2>🔥 Реактивная лента (Real-time)</h2>
+<h2>🔥 Реактивная лента</h2>
 
-  <input id="text" placeholder="Напиши пост">
-  <button onclick="addPost()">Отправить</button>
+<input id="text" placeholder="Напиши пост">
+<button onclick="addPost()">Отправить</button>
 
-  <hr>
+<hr>
 
-  <div id="feed"></div>
+<div id="feed"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      query,
-      orderBy,
-      onSnapshot,
-      doc,
-      updateDoc,
-      increment,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
 
-    // 🔹 ТВОИ ДАННЫЕ
-    const firebaseConfig = {
-      apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
-      authDomain: "plas-e449b.firebaseapp.com",
-      projectId: "plas-e449b",
-      storageBucket: "plas-e449b.firebasestorage.app",
-      messagingSenderId: "108896604722",
-      appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  doc,
+  updateDoc,
+  increment,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+// 🔹 ТВОИ ДАННЫЕ
+const firebaseConfig = {
+  apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
+  authDomain: "plas-e449b.firebaseapp.com",
+  projectId: "plas-e449b",
+  storageBucket: "plas-e449b.firebasestorage.app",
+  messagingSenderId: "108896604722",
+  appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
+};
 
-    const feed = document.getElementById("feed");
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    // 🔥 ДОБАВИТЬ ПОСТ
-    window.addPost = async function () {
-      const text = document.getElementById("text").value;
+const feed = document.getElementById("feed");
 
-      if (!text) return;
+// 🔥 ДОБАВИТЬ ПОСТ
+window.addPost = async function () {
+  const text = document.getElementById("text").value;
 
-      await addDoc(collection(db, "posts"), {
-        text: text,
-        likes: 0,
-        timestamp: serverTimestamp()
-      });
+  if (!text) return;
 
-      document.getElementById("text").value = "";
-    };
+  await addDoc(collection(db, "posts"), {
+    text,
+    likes: 0,
+    timestamp: serverTimestamp()
+  });
 
-    // 🔥 REAL-TIME ЛЕНТА
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+  document.getElementById("text").value = "";
+};
 
-    onSnapshot(q, (snapshot) => {
-      feed.innerHTML = "";
+// 🔥 REAL-TIME ЛЕНТА + СОРТИРОВКА
+const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
 
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
+onSnapshot(q, (snapshot) => {
+  feed.innerHTML = "";
 
-        const div = document.createElement("div");
-        div.innerHTML = `
-          <p>${data.text}</p>
-          <button onclick="likePost('${docSnap.id}', ${data.likes})">
-            ❤️ ${data.likes}
-          </button>
-          <hr>
-        `;
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
 
-        feed.appendChild(div);
-      });
-    });
+    const div = document.createElement("div");
+    div.className = "post";
 
-    // 🔥 ЛАЙК (атомарный increment)
-    window.likePost = async function (id) {
-      const ref = doc(db, "posts", id);
+    div.innerHTML = `
+      <p>${data.text}</p>
+      <button onclick="likePost('${docSnap.id}')">
+        ❤️ ${data.likes}
+      </button>
+    `;
 
-      await updateDoc(ref, {
-        likes: increment(1)
-      });
-    };
+    feed.appendChild(div);
+  });
+});
 
-  </script>
+// 🔥 АТОМАРНЫЕ ЛАЙКИ
+window.likePost = async function (id) {
+  const ref = doc(db, "posts", id);
+
+  await updateDoc(ref, {
+    likes: increment(1)
+  });
+};
+
+</script>
 
 </body>
 </html>
-```
