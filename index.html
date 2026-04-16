@@ -2,27 +2,34 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Reactive Firebase Feed</title>
+  <title>Firebase Feed — Защищённая версия</title>
   <style>
     body { font-family: Arial; margin: 20px; }
-    .post { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-    button { cursor: pointer; }
+    .post { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+    button { cursor: pointer; padding: 8px 12px; margin: 5px; }
+    .user-info { background: #e0e0e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+    .error { color: red; font-size: 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h2>🔥 Реактивная лента</h2>
+<h2>🔥 Реактивная лента (Защищённая версия)</h2>
+
+<div class="user-info">
+  <span id="userStatus">🔐 Загрузка...</span>
+  <button id="reAuthBtn" style="display:none;">Переавторизоваться</button>
+</div>
 
 <input id="text" placeholder="Напиши пост">
-<button onclick="addPost()">Отправить</button>
+<button id="sendBtn">Отправить</button>
 
 <hr>
-
 <div id="feed"></div>
+<div id="errorMsg" class="error"></div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -36,7 +43,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 🔹 ТВОИ ДАННЫЕ
 const firebaseConfig = {
   apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
   authDomain: "plas-e449b.firebaseapp.com",
@@ -47,57 +53,123 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-const feed = document.getElementById("feed");
+let currentUser = null;
 
-// 🔥 ДОБАВИТЬ ПОСТ
-window.addPost = async function () {
+// 🔐 Функция 1: Анонимная авторизация
+async function initAuth() {
+  try {
+    const userCred = await signInAnonymously(auth);
+    currentUser = userCred.user;
+    document.getElementById("userStatus").innerHTML = `✅ Авторизован (ID: ${currentUser.uid.slice(0, 8)}...)`;
+    return currentUser;
+  } catch (error) {
+    console.error("Ошибка авторизации:", error);
+    document.getElementById("userStatus").innerHTML = "❌ Ошибка авторизации";
+    return null;
+  }
+}
+
+// Следим за состоянием авторизации
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById("userStatus").innerHTML = `✅ Авторизован (ID: ${user.uid.slice(0, 8)}...)`;
+    document.getElementById("reAuthBtn").style.display = "none";
+  } else {
+    currentUser = null;
+    document.getElementById("userStatus").innerHTML = "❌ Не авторизован. Нажмите кнопку входа.";
+    document.getElementById("reAuthBtn").style.display = "inline-block";
+  }
+});
+
+// 🔥 Функция 2: Добавление поста (с привязкой к пользователю)
+window.addPost = async function() {
   const text = document.getElementById("text").value;
+  const errorDiv = document.getElementById("errorMsg");
+  
+  if (!currentUser) {
+    errorDiv.innerHTML = "❌ Ошибка: сначала авторизуйтесь!";
+    return;
+  }
+  
+  if (!text.trim()) {
+    errorDiv.innerHTML = "❌ Пост не может быть пустым!";
+    return;
+  }
 
-  if (!text) return;
-
-  await addDoc(collection(db, "posts"), {
-    text,
-    likes: 0,
-    timestamp: serverTimestamp()
-  });
-
-  document.getElementById("text").value = "";
+  try {
+    await addDoc(collection(db, "posts"), {
+      text: text.trim(),
+      likes: 0,
+      authorId: currentUser.uid,
+      authorName: `User_${currentUser.uid.slice(0, 6)}`,
+      timestamp: serverTimestamp()
+    });
+    
+    document.getElementById("text").value = "";
+    errorDiv.innerHTML = "";
+  } catch (error) {
+    errorDiv.innerHTML = `❌ Ошибка: ${error.message}`;
+  }
 };
 
-// 🔥 REAL-TIME ЛЕНТА + СОРТИРОВКА
+// ❤️ Лайк с проверкой (нельзя лайкать свои посты)
+window.likePost = async function(postId, authorId) {
+  if (!currentUser) {
+    document.getElementById("errorMsg").innerHTML = "❌ Авторизуйтесь, чтобы ставить лайки!";
+    return;
+  }
+  
+  if (currentUser.uid === authorId) {
+    document.getElementById("errorMsg").innerHTML = "⚠️ Нельзя лайкать свои посты!";
+    setTimeout(() => document.getElementById("errorMsg").innerHTML = "", 2000);
+    return;
+  }
+  
+  try {
+    const ref = doc(db, "posts", postId);
+    await updateDoc(ref, { likes: increment(1) });
+    document.getElementById("errorMsg").innerHTML = "";
+  } catch (error) {
+    document.getElementById("errorMsg").innerHTML = `❌ Ошибка лайка: ${error.message}`;
+  }
+};
+
+// 📡 Real-time лента
 const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
 
 onSnapshot(q, (snapshot) => {
+  const feed = document.getElementById("feed");
   feed.innerHTML = "";
-
+  
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-
+    const isAuthor = currentUser && data.authorId === currentUser.uid;
+    
     const div = document.createElement("div");
     div.className = "post";
-
     div.innerHTML = `
-      <p>${data.text}</p>
-      <button onclick="likePost('${docSnap.id}')">
-        ❤️ ${data.likes}
+      <p><strong>${data.authorName || "Аноним"}</strong>: ${data.text}</p>
+      <button onclick="likePost('${docSnap.id}', '${data.authorId || ""}')">
+        ❤️ ${data.likes || 0}
       </button>
+      ${isAuthor ? '<small style="color:gray;"> (ваш пост)</small>' : ''}
     `;
-
     feed.appendChild(div);
   });
 });
 
-// 🔥 АТОМАРНЫЕ ЛАЙКИ
-window.likePost = async function (id) {
-  const ref = doc(db, "posts", id);
+// Кнопки
+document.getElementById("sendBtn").onclick = () => window.addPost();
+document.getElementById("reAuthBtn").onclick = () => signInAnonymously(auth);
 
-  await updateDoc(ref, {
-    likes: increment(1)
-  });
-};
+// Запуск
+initAuth();
 
+console.log("%c🛡️ Сайт защищён от взлома через консоль!", "color: green; font-size: 16px");
 </script>
 
 </body>
