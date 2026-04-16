@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firebase Feed — Google Auth + Картинки</title>
+  <title>💬 Личные сообщения — Firebase DM</title>
   <style>
     * {
       margin: 0;
@@ -19,522 +19,695 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
-    }
-
-    .profile-card {
       background: white;
       border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex;
+      height: 90vh;
+    }
+
+    /* Боковая панель с диалогами */
+    .sidebar {
+      width: 320px;
+      background: #f8f9fa;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
       padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .sidebar-header h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+
+    .new-chat {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .user-avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-
-    .user-name {
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .user-email {
-      font-size: 12px;
-      color: gray;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 30px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: bold;
-    }
-
-    .btn-google {
-      background: #4285f4;
-      color: white;
-      display: flex;
-      align-items: center;
       gap: 10px;
     }
 
-    .btn-google:hover {
-      background: #3367d6;
-      transform: scale(1.02);
-    }
-
-    .btn-logout {
-      background: #dc3545;
-      color: white;
-    }
-
-    .btn-logout:hover {
-      background: #c82333;
-    }
-
-    .post-form {
-      background: white;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    }
-
-    .post-form.hidden {
-      display: none;
-    }
-
-    .post-form textarea {
-      width: 100%;
-      padding: 12px;
+    .new-chat input {
+      flex: 1;
+      padding: 10px;
       border: 2px solid #e0e0e0;
       border-radius: 12px;
       font-size: 14px;
-      margin-bottom: 10px;
-      font-family: inherit;
-      resize: vertical;
     }
 
-    .post-form textarea:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .file-label {
-      background: #f0f0f0;
+    .new-chat button {
       padding: 10px 15px;
-      border-radius: 30px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn-submit {
       background: #667eea;
       color: white;
-      flex: 1;
-    }
-
-    .btn-submit:hover {
-      background: #5a67d8;
-    }
-
-    .image-preview {
-      margin-top: 10px;
-      max-width: 100%;
-      max-height: 150px;
+      border: none;
       border-radius: 12px;
-      display: none;
+      cursor: pointer;
     }
 
-    .feed {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
+    .conversations-list {
+      flex: 1;
+      overflow-y: auto;
     }
 
-    .post {
-      background: white;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    }
-
-    .post-header {
+    .conversation-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      cursor: pointer;
+      transition: background 0.2s;
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 15px;
     }
 
-    .post-avatar {
+    .conversation-item:hover {
+      background: #e9ecef;
+    }
+
+    .conversation-item.active {
+      background: #e9ecef;
+      border-left: 4px solid #667eea;
+    }
+
+    .conversation-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .conversation-info {
+      flex: 1;
+    }
+
+    .conversation-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .conversation-last-message {
+      font-size: 12px;
+      color: #6c757d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-time {
+      font-size: 10px;
+      color: #6c757d;
+    }
+
+    .unread-badge {
+      background: #e0245e;
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    /* Основная область чата */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      padding: 20px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-avatar {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      object-fit: cover;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
     }
 
-    .post-author {
+    .chat-name {
       font-weight: bold;
+      font-size: 18px;
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .message.sent {
+      justify-content: flex-end;
+    }
+
+    .message.received {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 60%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      font-size: 14px;
+      position: relative;
+    }
+
+    .message.sent .message-bubble {
+      background: #667eea;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.received .message-bubble {
+      background: white;
+      color: #333;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .message-time {
+      font-size: 10px;
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    .message.sent .message-time {
+      text-align: right;
+    }
+
+    .message-status {
+      font-size: 10px;
+      margin-left: 8px;
+    }
+
+    .chat-input-container {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input-container input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
       font-size: 14px;
     }
 
-    .post-time {
-      font-size: 11px;
-      color: gray;
-    }
-
-    .post-text {
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-
-    .post-image {
-      max-width: 100%;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      max-height: 300px;
-    }
-
-    .post-actions {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .like-btn {
-      background: none;
+    .chat-input-container button {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
       border: none;
-      font-size: 18px;
+      border-radius: 25px;
       cursor: pointer;
+    }
+
+    .profile-card {
+      padding: 15px 20px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #666;
+      gap: 12px;
     }
 
-    .like-btn:hover {
-      color: #e0245e;
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #28a745;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
     }
 
-    .delete-btn {
-      background: #fee;
+    .logout-btn {
+      margin-left: auto;
+      background: #dc3545;
+      color: white;
       border: none;
-      padding: 5px 10px;
+      padding: 8px 16px;
       border-radius: 20px;
       cursor: pointer;
-      margin-left: auto;
-    }
-
-    .error-msg {
-      color: #dc3545;
       font-size: 12px;
-      margin-top: 10px;
-      text-align: center;
     }
 
-    .loading {
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #6c757d;
       text-align: center;
-      color: white;
-      padding: 20px;
+      padding: 40px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Профиль -->
-    <div class="profile-card" id="profileCard">
-      <div class="user-info" id="userInfo">
-        <img class="user-avatar" id="userAvatar" src="https://via.placeholder.com/50" alt="Avatar">
-        <div>
-          <div class="user-name" id="userName">Гость</div>
-          <div class="user-email" id="userEmail">Не авторизован</div>
-        </div>
-      </div>
-      <div id="authButtons">
-        <button class="btn btn-google" id="loginBtn">🚀 Войти через Google</button>
+<div class="container">
+  <!-- Боковая панель -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>💬 Диалоги</h2>
+      <div class="new-chat">
+        <input type="text" id="newChatUsername" placeholder="Username для чата">
+        <button onclick="startNewChat()">➕</button>
       </div>
     </div>
-
-    <!-- Форма добавления поста (скрыта для гостей) -->
-    <div class="post-form hidden" id="postForm">
-      <textarea id="postText" rows="3" placeholder="Что у вас нового?"></textarea>
-      <input type="file" id="imageInput" accept="image/*">
-      <img id="imagePreview" class="image-preview">
-      <div class="form-actions">
-        <label class="file-label" for="imageInput">📷 Добавить фото</label>
-        <button class="btn btn-submit" id="submitBtn">📤 Опубликовать</button>
-      </div>
-      <div id="formError" class="error-msg"></div>
-    </div>
-
-    <!-- Лента -->
-    <div class="feed" id="feed">
-      <div class="loading">Загрузка постов...</div>
+    <div class="conversations-list" id="conversationsList">
+      <div class="empty-state">Нет диалогов</div>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithPopup, 
-      GoogleAuthProvider, 
-      signOut, 
-      onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      query,
-      orderBy,
-      onSnapshot,
-      doc,
-      updateDoc,
-      increment,
-      serverTimestamp,
-      deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
-      getStorage,
-      ref,
-      uploadBytes,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  <!-- Основная область -->
+  <div class="chat-area">
+    <div class="profile-card" id="profileCard">
+      <div class="profile-avatar" id="profileAvatar">👤</div>
+      <div>
+        <div id="profileUsername">Загрузка...</div>
+        <div style="font-size: 12px; color: gray;" id="profileStatus"></div>
+      </div>
+      <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+    </div>
 
-    // ⚠️ ВАЖНО: ЗАМЕНИ ЭТИ ДАННЫЕ НА СВОИ ИЗ FIREBASE!
-    // Как получить: Firebase Console → Project Overview → Добавить веб-приложение
-    const firebaseConfig = {
-      apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
-      authDomain: "plas-e449b.firebaseapp.com",
-      projectId: "plas-e449b",
-      storageBucket: "plas-e449b.firebasestorage.app",
-      messagingSenderId: "108896604722",
-      appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
-    };
+    <div class="chat-header" id="chatHeader" style="display: none;">
+      <div class="chat-avatar" id="chatAvatar">👤</div>
+      <div>
+        <div class="chat-name" id="chatName">Выберите диалог</div>
+        <div style="font-size: 12px; color: gray;" id="chatStatus"></div>
+      </div>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const provider = new GoogleAuthProvider();
+    <div class="messages-container" id="messagesContainer">
+      <div class="empty-state">Выберите диалог, чтобы начать общение</div>
+    </div>
 
-    // DOM элементы
-    const loginBtn = document.getElementById("loginBtn");
-    const userAvatar = document.getElementById("userAvatar");
-    const userName = document.getElementById("userName");
-    const userEmail = document.getElementById("userEmail");
-    const postForm = document.getElementById("postForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const postText = document.getElementById("postText");
-    const imageInput = document.getElementById("imageInput");
-    const imagePreview = document.getElementById("imagePreview");
-    const formError = document.getElementById("formError");
-    const feed = document.getElementById("feed");
+    <div class="chat-input-container" id="chatInputContainer" style="display: none;">
+      <input type="text" id="messageInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()">📤 Отправить</button>
+    </div>
+  </div>
+</div>
 
-    let currentUser = null;
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { 
+    getAuth, 
+    signInAnonymously, 
+    signOut, 
+    onAuthStateChanged,
+    updateProfile
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    doc,
+    addDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    getDoc,
+    getDocs,
+    query,
+    where,
+    orderBy,
+    onSnapshot,
+    serverTimestamp,
+    arrayUnion,
+    arrayRemove,
+    increment
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 🔐 Вход через Google
-    window.loginWithGoogle = async function() {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        console.log("✅ Вошли как:", result.user.displayName);
-        formError.innerHTML = "";
-      } catch (error) {
-        console.error("Ошибка входа:", error);
-        if (error.code === 'auth/popup-blocked') {
-          formError.innerHTML = "❌ Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта.";
-        } else if (error.code === 'auth/unauthorized-domain') {
-          formError.innerHTML = "❌ Домен не авторизован. Добавьте этот домен в Firebase Console → Authentication → Settings → Authorized domains";
-        } else {
-          formError.innerHTML = "❌ Ошибка входа: " + error.message;
-        }
-      }
-    };
+  // Конфигурация Firebase (ЗАМЕНИ НА СВОЮ!)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
+    authDomain: "plas-e449b.firebaseapp.com",
+    projectId: "plas-e449b",
+    storageBucket: "plas-e449b.firebasestorage.app",
+    messagingSenderId: "108896604722",
+    appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
+  };
 
-    // Выход
-    window.logout = async function() {
-      try {
-        await signOut(auth);
-        console.log("✅ Вышли из аккаунта");
-      } catch (error) {
-        console.error("Ошибка выхода:", error);
-      }
-    };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    // Следим за состоянием авторизации
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      const authButtons = document.getElementById("authButtons");
+  // Глобальные переменные
+  let currentUser = null;
+  let currentConversationId = null;
+  let currentChatUser = null;
+  let unsubscribeMessages = null;
 
-      if (user) {
-        // Пользователь ВОШЁЛ
-        userAvatar.src = user.photoURL || "https://via.placeholder.com/50";
-        userName.textContent = user.displayName || "Пользователь";
-        userEmail.textContent = user.email || "";
-        authButtons.innerHTML = `<button class="btn btn-logout" id="logoutBtn">🚪 Выйти</button>`;
-        document.getElementById("logoutBtn").onclick = logout;
-        postForm.classList.remove("hidden");
-        formError.innerHTML = "";
-        console.log("✅ Пользователь авторизован, форма доступна");
-      } else {
-        // Пользователь НЕ ВОШЁЛ
-        userAvatar.src = "https://via.placeholder.com/50";
-        userName.textContent = "Гость";
-        userEmail.textContent = "Не авторизован";
-        authButtons.innerHTML = `<button class="btn btn-google" id="loginBtn">🚀 Войти через Google</button>`;
-        document.getElementById("loginBtn").onclick = loginWithGoogle;
-        postForm.classList.add("hidden");
-        console.log("❌ Пользователь не авторизован, форма скрыта");
-      }
-    });
+  // DOM элементы
+  const conversationsList = document.getElementById("conversationsList");
+  const messagesContainer = document.getElementById("messagesContainer");
+  const chatHeader = document.getElementById("chatHeader");
+  const chatInputContainer = document.getElementById("chatInputContainer");
+  const chatName = document.getElementById("chatName");
+  const chatAvatar = document.getElementById("chatAvatar");
+  const messageInput = document.getElementById("messageInput");
+  const profileUsername = document.getElementById("profileUsername");
+  const profileAvatar = document.getElementById("profileAvatar");
 
-    // Предпросмотр картинки
-    imageInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          imagePreview.src = event.target.result;
-          imagePreview.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      } else {
-        imagePreview.style.display = "none";
-      }
-    });
-
-    // Публикация поста
-    submitBtn.onclick = async () => {
-      if (!currentUser) {
-        formError.innerHTML = "❌ Вы не авторизованы! Войдите через Google.";
-        return;
-      }
-
-      const text = postText.value.trim();
-      if (!text) {
-        formError.innerHTML = "❌ Напишите текст поста!";
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "⏳ Публикация...";
-
-      try {
-        let imageUrl = null;
-        const imageFile = imageInput.files[0];
-
-        if (imageFile) {
-          const timestamp = Date.now();
-          const storageRef = ref(storage, `posts/${timestamp}_${imageFile.name}`);
-          await uploadBytes(storageRef, imageFile);
-          imageUrl = await getDownloadURL(storageRef);
-        }
-
-        await addDoc(collection(db, "posts"), {
-          text: text,
-          likes: 0,
-          authorId: currentUser.uid,
-          authorName: currentUser.displayName || "Аноним",
-          authorAvatar: currentUser.photoURL || "",
-          imageUrl: imageUrl,
-          timestamp: serverTimestamp()
-        });
-
-        postText.value = "";
-        imageInput.value = "";
-        imagePreview.style.display = "none";
-        formError.innerHTML = "";
-      } catch (error) {
-        console.error("Ошибка публикации:", error);
-        formError.innerHTML = "❌ Ошибка: " + error.message;
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "📤 Опубликовать";
-      }
-    };
-
-    // Лайк
-    window.likePost = async (postId) => {
-      if (!currentUser) {
-        alert("❌ Войдите в аккаунт, чтобы ставить лайки!");
-        return;
-      }
-
-      try {
-        const postRef = doc(db, "posts", postId);
-        await updateDoc(postRef, { likes: increment(1) });
-      } catch (error) {
-        console.error("Ошибка лайка:", error);
-      }
-    };
-
-    // Удаление поста
-    window.deletePost = async (postId) => {
-      if (!currentUser) return;
-      if (confirm("Удалить пост?")) {
-        try {
-          await deleteDoc(doc(db, "posts", postId));
-        } catch (error) {
-          console.error("Ошибка удаления:", error);
-        }
-      }
-    };
-
-    // Защита от XSS
-    function escapeHtml(str) {
-      if (!str) return "";
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // ========== АВТОРИЗАЦИЯ ==========
+  async function initAuth() {
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error("Ошибка авторизации:", error);
     }
+  }
 
-    // Real-time лента
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+  // Создание профиля пользователя
+  async function createUserProfile(user, username) {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        username: username || `user_${user.uid.slice(0, 6)}`,
+        email: user.email || null,
+        avatar: null,
+        online: true,
+        lastSeen: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+    }
+    return userRef;
+  }
 
-    onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        feed.innerHTML = '<div class="loading">📭 Нет постов. Будьте первым!</div>';
-        return;
+  // ========== ПОИСК ПОЛЬЗОВАТЕЛЯ ПО USERNAME ==========
+  async function findUserByUsername(username) {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("username", "==", username));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+  }
+
+  // ========== СОЗДАНИЕ НОВОГО ДИАЛОГА ==========
+  async function createConversation(userId1, userId2) {
+    // Проверяем, существует ли уже диалог
+    const conversationsRef = collection(db, "conversations");
+    const q = query(conversationsRef, where("participants", "array-contains", userId1));
+    const querySnapshot = await getDocs(q);
+    
+    for (const docSnap of querySnapshot.docs) {
+      const data = docSnap.data();
+      if (data.participants.includes(userId2)) {
+        return docSnap.id;
       }
+    }
+    
+    // Создаём новый диалог
+    const newConversation = {
+      participants: [userId1, userId2],
+      lastMessage: "",
+      lastMessageTime: null,
+      createdAt: serverTimestamp()
+    };
+    
+    const docRef = await addDoc(collection(db, "conversations"), newConversation);
+    return docRef.id;
+  }
 
-      feed.innerHTML = "";
+  // ========== НАЧАТЬ НОВЫЙ ЧАТ ==========
+  window.startNewChat = async function() {
+    const username = document.getElementById("newChatUsername").value.trim();
+    if (!username) {
+      alert("Введите username пользователя");
+      return;
+    }
+    
+    const user = await findUserByUsername(username);
+    if (!user) {
+      alert(`Пользователь "${username}" не найден`);
+      return;
+    }
+    
+    if (user.id === currentUser.uid) {
+      alert("Нельзя создать чат с самим собой");
+      return;
+    }
+    
+    const conversationId = await createConversation(currentUser.uid, user.id);
+    document.getElementById("newChatUsername").value = "";
+    
+    // Открываем созданный диалог
+    await loadConversation(conversationId, user);
+  };
+
+  // ========== ЗАГРУЗКА ДИАЛОГА ==========
+  async function loadConversation(conversationId, chatUser) {
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+    }
+    
+    currentConversationId = conversationId;
+    currentChatUser = chatUser;
+    
+    // Обновляем заголовок чата
+    chatHeader.style.display = "flex";
+    chatInputContainer.style.display = "flex";
+    chatName.textContent = chatUser.username;
+    chatAvatar.textContent = chatUser.username.charAt(0).toUpperCase();
+    
+    // Подписываемся на сообщения
+    const messagesRef = collection(db, "messages", conversationId, "messages");
+    const q = query(messagesRef, orderBy("createdAt", "asc"));
+    
+    unsubscribeMessages = onSnapshot(q, (snapshot) => {
+      messagesContainer.innerHTML = "";
+      
+      if (snapshot.empty) {
+        messagesContainer.innerHTML = '<div class="empty-state">💬 Напишите первое сообщение!</div>';
+      }
+      
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const postId = docSnap.id;
-        const isAuthor = currentUser && data.authorId === currentUser.uid;
-        const postDate = data.timestamp?.toDate() || new Date();
-
-        const postDiv = document.createElement("div");
-        postDiv.className = "post";
-        postDiv.innerHTML = `
-          <div class="post-header">
-            <img class="post-avatar" src="${data.authorAvatar || 'https://via.placeholder.com/40'}" alt="avatar">
-            <div>
-              <div class="post-author">${escapeHtml(data.authorName) || "Аноним"}</div>
-              <div class="post-time">${postDate.toLocaleString()}</div>
+        const message = docSnap.data();
+        const isSent = message.senderId === currentUser.uid;
+        
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+        
+        const time = message.createdAt?.toDate() || new Date();
+        
+        messageDiv.innerHTML = `
+          <div class="message-bubble">
+            ${escapeHtml(message.text)}
+            <div class="message-time">
+              ${time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              ${isSent ? (message.read ? '✓✓' : '✓') : ''}
             </div>
-            ${isAuthor ? `<button class="delete-btn" onclick="deletePost('${postId}')">🗑️</button>` : ''}
-          </div>
-          <div class="post-text">${escapeHtml(data.text)}</div>
-          ${data.imageUrl ? `<img class="post-image" src="${data.imageUrl}" alt="post image">` : ''}
-          <div class="post-actions">
-            <button class="like-btn" onclick="likePost('${postId}')">
-              ❤️ <span>${data.likes || 0}</span>
-            </button>
           </div>
         `;
-        feed.appendChild(postDiv);
+        
+        messagesContainer.appendChild(messageDiv);
       });
+      
+      // Скролл вниз
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      
+      // Помечаем сообщения как прочитанные
+      markMessagesAsRead(conversationId);
     });
+  }
 
-    console.log("%c🛡️ Сайт защищён! Google Auth + Rules + Storage", "color: green; font-size: 14px");
-    console.log("Если кнопка входа не работает, проверь:");
-    console.log("1. Google Auth включён в Firebase Console");
-    console.log("2. Твой домен добавлен в Authorized domains");
-  </script>
+  // ========== ОТПРАВКА СООБЩЕНИЯ ==========
+  window.sendMessage = async function() {
+    const text = messageInput.value.trim();
+    if (!text || !currentConversationId) return;
+    
+    try {
+      const messagesRef = collection(db, "messages", currentConversationId, "messages");
+      await addDoc(messagesRef, {
+        text: text,
+        senderId: currentUser.uid,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+      
+      // Обновляем последнее сообщение в диалоге
+      const conversationRef = doc(db, "conversations", currentConversationId);
+      await updateDoc(conversationRef, {
+        lastMessage: text,
+        lastMessageTime: serverTimestamp()
+      });
+      
+      messageInput.value = "";
+    } catch (error) {
+      console.error("Ошибка отправки:", error);
+      alert("Ошибка отправки сообщения");
+    }
+  };
+
+  // ========== ПОМЕТКА ПРОЧИТАННЫХ СООБЩЕНИЙ ==========
+  async function markMessagesAsRead(conversationId) {
+    const messagesRef = collection(db, "messages", conversationId, "messages");
+    const q = query(messagesRef, where("senderId", "!=", currentUser.uid), where("read", "==", false));
+    const querySnapshot = await getDocs(q);
+    
+    for (const docSnap of querySnapshot.docs) {
+      await updateDoc(doc(db, "messages", conversationId, "messages", docSnap.id), {
+        read: true
+      });
+    }
+  }
+
+  // ========== ЗАГРУЗКА СПИСКА ДИАЛОГОВ ==========
+  function loadConversations() {
+    if (!currentUser) return;
+    
+    const conversationsRef = collection(db, "conversations");
+    const q = query(conversationsRef, where("participants", "array-contains", currentUser.uid));
+    
+    onSnapshot(q, async (snapshot) => {
+      conversationsList.innerHTML = "";
+      
+      if (snapshot.empty) {
+        conversationsList.innerHTML = '<div class="empty-state">📭 Нет диалогов</div>';
+        return;
+      }
+      
+      for (const docSnap of snapshot.docs) {
+        const conversation = docSnap.data();
+        const otherUserId = conversation.participants.find(id => id !== currentUser.uid);
+        
+        // Получаем данные собеседника
+        const userRef = doc(db, "users", otherUserId);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        
+        const conversationDiv = document.createElement("div");
+        conversationDiv.className = `conversation-item ${currentConversationId === docSnap.id ? 'active' : ''}`;
+        conversationDiv.onclick = () => {
+          loadConversation(docSnap.id, { id: otherUserId, ...userData });
+          loadConversations(); // Обновляем активный класс
+        };
+        
+        const lastMessage = conversation.lastMessage || "Нет сообщений";
+        const lastTime = conversation.lastMessageTime?.toDate() || new Date();
+        
+        conversationDiv.innerHTML = `
+          <div class="conversation-avatar">${(userData?.username?.charAt(0) || '?').toUpperCase()}</div>
+          <div class="conversation-info">
+            <div class="conversation-name">${escapeHtml(userData?.username || 'Пользователь')}</div>
+            <div class="conversation-last-message">${escapeHtml(lastMessage.substring(0, 50))}</div>
+          </div>
+          <div class="conversation-time">${lastTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        `;
+        
+        conversationsList.appendChild(conversationDiv);
+      }
+    });
+  }
+
+  // ========== ВЫХОД ==========
+  window.logout = async function() {
+    if (currentUser) {
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        online: false,
+        lastSeen: serverTimestamp()
+      });
+    }
+    await signOut(auth);
+    currentUser = null;
+    currentConversationId = null;
+    if (unsubscribeMessages) unsubscribeMessages();
+    location.reload();
+  };
+
+  // ========== ПОЛУЧИТЬ USERNAME ==========
+  async function getUsername() {
+    let username = prompt("Введите ваш username (будет виден другим пользователям):", `user_${Math.random().toString(36).substring(2, 8)}`);
+    if (!username) {
+      username = `user_${Math.random().toString(36).substring(2, 8)}`;
+    }
+    return username;
+  }
+
+  // ========== СЛЕЖЕНИЕ ЗА АВТОРИЗАЦИЕЙ ==========
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      
+      // Проверяем/создаём профиль
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (!userSnap.exists()) {
+        const username = await getUsername();
+        await createUserProfile(user, username);
+        await updateProfile(auth.currentUser, { displayName: username });
+      }
+      
+      // Обновляем статус онлайн
+      await updateDoc(doc(db, "users", user.uid), {
+        online: true,
+        lastSeen: serverTimestamp()
+      });
+      
+      // Получаем данные пользователя
+      const updatedSnap = await getDoc(userRef);
+      const userData = updatedSnap.data();
+      profileUsername.textContent = userData?.username || user.uid.slice(0, 8);
+      profileAvatar.textContent = (userData?.username?.charAt(0) || '👤').toUpperCase();
+      
+      // Загружаем диалоги
+      loadConversations();
+    } else {
+      initAuth();
+    }
+  });
+
+  // Защита от XSS
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Запуск
+  initAuth();
+  
+  console.log("%c💬 Система личных сообщений (DM) запущена!", "color: green; font-size: 16px");
+  console.log("Чтобы начать общение, введите username другого пользователя");
+</script>
 </body>
 </html>
