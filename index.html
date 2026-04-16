@@ -2,175 +2,551 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Firebase Feed — Защищённая версия</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Feed — Google Auth + Картинки</title>
   <style>
-    body { font-family: Arial; margin: 20px; }
-    .post { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
-    button { cursor: pointer; padding: 8px 12px; margin: 5px; }
-    .user-info { background: #e0e0e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
-    .error { color: red; font-size: 12px; margin-top: 10px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Карточка профиля */
+    .profile-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .user-name {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: gray;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 30px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: bold;
+    }
+
+    .btn-google {
+      background: #4285f4;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-google:hover {
+      background: #3367d6;
+      transform: scale(1.02);
+    }
+
+    .btn-logout {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-logout:hover {
+      background: #c82333;
+    }
+
+    /* Форма добавления поста */
+    .post-form {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    .post-form.hidden {
+      display: none;
+    }
+
+    .post-form input, .post-form textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .post-form input:focus, .post-form textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .file-label {
+      background: #f0f0f0;
+      padding: 10px 15px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .file-label:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-submit {
+      background: #667eea;
+      color: white;
+      flex: 1;
+    }
+
+    .btn-submit:hover {
+      background: #5a67d8;
+    }
+
+    .image-preview {
+      margin-top: 10px;
+      max-width: 100%;
+      max-height: 150px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    /* Лента постов */
+    .feed {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .post {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .post:hover {
+      transform: translateY(-2px);
+    }
+
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .post-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .post-author {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .post-time {
+      font-size: 11px;
+      color: gray;
+    }
+
+    .post-text {
+      font-size: 16px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .post-image {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      max-height: 300px;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .like-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .like-btn:hover {
+      color: #e0245e;
+      transform: scale(1.05);
+    }
+
+    .like-btn.liked {
+      color: #e0245e;
+    }
+
+    .error-msg {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .loading {
+      text-align: center;
+      color: white;
+      padding: 20px;
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <!-- Профиль -->
+    <div class="profile-card" id="profileCard">
+      <div class="user-info" id="userInfo">
+        <img class="user-avatar" id="userAvatar" src="https://via.placeholder.com/50" alt="Avatar">
+        <div>
+          <div class="user-name" id="userName">Гость</div>
+          <div class="user-email" id="userEmail">Не авторизован</div>
+        </div>
+      </div>
+      <div id="authButtons">
+        <button class="btn btn-google" id="loginBtn">
+          🚀 Войти через Google
+        </button>
+      </div>
+    </div>
 
-<h2>🔥 Реактивная лента (Защищённая версия)</h2>
+    <!-- Форма добавления поста -->
+    <div class="post-form hidden" id="postForm">
+      <textarea id="postText" rows="3" placeholder="Что у вас нового?"></textarea>
+      <input type="file" id="imageInput" accept="image/*">
+      <img id="imagePreview" class="image-preview">
+      <div class="form-actions">
+        <label class="file-label" for="imageInput">📷 Добавить фото</label>
+        <button class="btn btn-submit" id="submitBtn">📤 Опубликовать</button>
+      </div>
+      <div id="formError" class="error-msg"></div>
+    </div>
 
-<div class="user-info">
-  <span id="userStatus">🔐 Загрузка...</span>
-  <button id="reAuthBtn" style="display:none;">Переавторизоваться</button>
-</div>
+    <!-- Лента -->
+    <div class="feed" id="feed">
+      <div class="loading">Загрузка постов...</div>
+    </div>
+  </div>
 
-<input id="text" placeholder="Напиши пост">
-<button id="sendBtn">Отправить</button>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      doc,
+      updateDoc,
+      increment,
+      serverTimestamp,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-<hr>
-<div id="feed"></div>
-<div id="errorMsg" class="error"></div>
+    // Конфигурация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
+      authDomain: "plas-e449b.firebaseapp.com",
+      projectId: "plas-e449b",
+      storageBucket: "plas-e449b.firebasestorage.app",
+      messagingSenderId: "108896604722",
+      appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
+    };
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  updateDoc,
-  increment,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    const provider = new GoogleAuthProvider();
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBoZboFW9AEfuQu9B61zWVHtsu1tGUGt5s",
-  authDomain: "plas-e449b.firebaseapp.com",
-  projectId: "plas-e449b",
-  storageBucket: "plas-e449b.firebasestorage.app",
-  messagingSenderId: "108896604722",
-  appId: "1:108896604722:web:cbf1cf5c0defc450cca22b"
-};
+    // DOM элементы
+    const loginBtn = document.getElementById("loginBtn");
+    const userAvatar = document.getElementById("userAvatar");
+    const userName = document.getElementById("userName");
+    const userEmail = document.getElementById("userEmail");
+    const postForm = document.getElementById("postForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const postText = document.getElementById("postText");
+    const imageInput = document.getElementById("imageInput");
+    const imagePreview = document.getElementById("imagePreview");
+    const formError = document.getElementById("formError");
+    const feed = document.getElementById("feed");
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+    let currentUser = null;
 
-let currentUser = null;
+    // 🔐 Функция входа через Google
+    window.loginWithGoogle = async function() {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        console.log("✅ Вошли как:", result.user.displayName);
+        formError.innerHTML = "";
+      } catch (error) {
+        console.error("Ошибка входа:", error);
+        formError.innerHTML = "❌ Ошибка входа: " + error.message;
+      }
+    };
 
-// 🔐 Функция 1: Анонимная авторизация
-async function initAuth() {
-  try {
-    const userCred = await signInAnonymously(auth);
-    currentUser = userCred.user;
-    document.getElementById("userStatus").innerHTML = `✅ Авторизован (ID: ${currentUser.uid.slice(0, 8)}...)`;
-    return currentUser;
-  } catch (error) {
-    console.error("Ошибка авторизации:", error);
-    document.getElementById("userStatus").innerHTML = "❌ Ошибка авторизации";
-    return null;
-  }
-}
+    // Функция выхода
+    window.logout = async function() {
+      try {
+        await signOut(auth);
+        console.log("✅ Вышли из аккаунта");
+      } catch (error) {
+        console.error("Ошибка выхода:", error);
+      }
+    };
 
-// Следим за состоянием авторизации
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    document.getElementById("userStatus").innerHTML = `✅ Авторизован (ID: ${user.uid.slice(0, 8)}...)`;
-    document.getElementById("reAuthBtn").style.display = "none";
-  } else {
-    currentUser = null;
-    document.getElementById("userStatus").innerHTML = "❌ Не авторизован. Нажмите кнопку входа.";
-    document.getElementById("reAuthBtn").style.display = "inline-block";
-  }
-});
+    // Обновление UI в зависимости от статуса авторизации
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      const authButtons = document.getElementById("authButtons");
 
-// 🔥 Функция 2: Добавление поста (с привязкой к пользователю)
-window.addPost = async function() {
-  const text = document.getElementById("text").value;
-  const errorDiv = document.getElementById("errorMsg");
-  
-  if (!currentUser) {
-    errorDiv.innerHTML = "❌ Ошибка: сначала авторизуйтесь!";
-    return;
-  }
-  
-  if (!text.trim()) {
-    errorDiv.innerHTML = "❌ Пост не может быть пустым!";
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, "posts"), {
-      text: text.trim(),
-      likes: 0,
-      authorId: currentUser.uid,
-      authorName: `User_${currentUser.uid.slice(0, 6)}`,
-      timestamp: serverTimestamp()
+      if (user) {
+        // Пользователь авторизован
+        userAvatar.src = user.photoURL || "https://via.placeholder.com/50";
+        userName.textContent = user.displayName || "Пользователь";
+        userEmail.textContent = user.email || "";
+        authButtons.innerHTML = `<button class="btn btn-logout" id="logoutBtn">🚪 Выйти</button>`;
+        document.getElementById("logoutBtn").onclick = logout;
+        postForm.classList.remove("hidden");
+        formError.innerHTML = "";
+      } else {
+        // Пользователь не авторизован
+        userAvatar.src = "https://via.placeholder.com/50";
+        userName.textContent = "Гость";
+        userEmail.textContent = "Не авторизован";
+        authButtons.innerHTML = `<button class="btn btn-google" id="loginBtn">🚀 Войти через Google</button>`;
+        document.getElementById("loginBtn").onclick = loginWithGoogle;
+        postForm.classList.add("hidden");
+      }
     });
-    
-    document.getElementById("text").value = "";
-    errorDiv.innerHTML = "";
-  } catch (error) {
-    errorDiv.innerHTML = `❌ Ошибка: ${error.message}`;
-  }
-};
 
-// ❤️ Лайк с проверкой (нельзя лайкать свои посты)
-window.likePost = async function(postId, authorId) {
-  if (!currentUser) {
-    document.getElementById("errorMsg").innerHTML = "❌ Авторизуйтесь, чтобы ставить лайки!";
-    return;
-  }
-  
-  if (currentUser.uid === authorId) {
-    document.getElementById("errorMsg").innerHTML = "⚠️ Нельзя лайкать свои посты!";
-    setTimeout(() => document.getElementById("errorMsg").innerHTML = "", 2000);
-    return;
-  }
-  
-  try {
-    const ref = doc(db, "posts", postId);
-    await updateDoc(ref, { likes: increment(1) });
-    document.getElementById("errorMsg").innerHTML = "";
-  } catch (error) {
-    document.getElementById("errorMsg").innerHTML = `❌ Ошибка лайка: ${error.message}`;
-  }
-};
+    // 🖼️ Предпросмотр изображения
+    imageInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          imagePreview.src = event.target.result;
+          imagePreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      } else {
+        imagePreview.style.display = "none";
+      }
+    });
 
-// 📡 Real-time лента
-const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    // 📝 Публикация поста (с картинкой)
+    submitBtn.onclick = async () => {
+      if (!currentUser) {
+        formError.innerHTML = "❌ Вы не авторизованы! Войдите через Google.";
+        return;
+      }
 
-onSnapshot(q, (snapshot) => {
-  const feed = document.getElementById("feed");
-  feed.innerHTML = "";
-  
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const isAuthor = currentUser && data.authorId === currentUser.uid;
-    
-    const div = document.createElement("div");
-    div.className = "post";
-    div.innerHTML = `
-      <p><strong>${data.authorName || "Аноним"}</strong>: ${data.text}</p>
-      <button onclick="likePost('${docSnap.id}', '${data.authorId || ""}')">
-        ❤️ ${data.likes || 0}
-      </button>
-      ${isAuthor ? '<small style="color:gray;"> (ваш пост)</small>' : ''}
-    `;
-    feed.appendChild(div);
-  });
-});
+      const text = postText.value.trim();
+      if (!text) {
+        formError.innerHTML = "❌ Напишите текст поста!";
+        return;
+      }
 
-// Кнопки
-document.getElementById("sendBtn").onclick = () => window.addPost();
-document.getElementById("reAuthBtn").onclick = () => signInAnonymously(auth);
+      submitBtn.disabled = true;
+      submitBtn.textContent = "⏳ Публикация...";
 
-// Запуск
-initAuth();
+      try {
+        let imageUrl = null;
+        const imageFile = imageInput.files[0];
 
-console.log("%c🛡️ Сайт защищён от взлома через консоль!", "color: green; font-size: 16px");
-</script>
+        // Загружаем картинку в Storage
+        if (imageFile) {
+          const timestamp = Date.now();
+          const storageRef = ref(storage, `posts/${timestamp}_${imageFile.name}`);
+          await uploadBytes(storageRef, imageFile);
+          imageUrl = await getDownloadURL(storageRef);
+        }
 
+        // Сохраняем пост в Firestore
+        await addDoc(collection(db, "posts"), {
+          text: text,
+          likes: 0,
+          authorId: currentUser.uid,
+          authorName: currentUser.displayName || "Аноним",
+          authorAvatar: currentUser.photoURL || "",
+          imageUrl: imageUrl,
+          timestamp: serverTimestamp()
+        });
+
+        // Очищаем форму
+        postText.value = "";
+        imageInput.value = "";
+        imagePreview.style.display = "none";
+        formError.innerHTML = "";
+      } catch (error) {
+        console.error("Ошибка публикации:", error);
+        formError.innerHTML = "❌ Ошибка: " + error.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "📤 Опубликовать";
+      }
+    };
+
+    // ❤️ Лайк поста
+    window.likePost = async (postId, currentLikes) => {
+      if (!currentUser) {
+        alert("❌ Войдите в аккаунт, чтобы ставить лайки!");
+        return;
+      }
+
+      try {
+        const postRef = doc(db, "posts", postId);
+        await updateDoc(postRef, {
+          likes: increment(1)
+        });
+      } catch (error) {
+        console.error("Ошибка лайка:", error);
+      }
+    };
+
+    // 🗑️ Удаление поста (только для автора)
+    window.deletePost = async (postId) => {
+      if (!currentUser) return;
+      
+      if (confirm("Удалить пост?")) {
+        try {
+          await deleteDoc(doc(db, "posts", postId));
+        } catch (error) {
+          console.error("Ошибка удаления:", error);
+        }
+      }
+    };
+
+    // 📡 Real-time лента
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        feed.innerHTML = '<div class="loading">📭 Нет постов. Будьте первым!</div>';
+        return;
+      }
+
+      feed.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const postId = docSnap.id;
+        const isAuthor = currentUser && data.authorId === currentUser.uid;
+        const postDate = data.timestamp?.toDate() || new Date();
+
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `
+          <div class="post-header">
+            <img class="post-avatar" src="${data.authorAvatar || 'https://via.placeholder.com/40'}" alt="avatar">
+            <div>
+              <div class="post-author">${data.authorName || "Аноним"}</div>
+              <div class="post-time">${postDate.toLocaleString()}</div>
+            </div>
+            ${isAuthor ? `<button class="delete-btn" onclick="deletePost('${postId}')" style="margin-left:auto; background:#fee; border:none; padding:5px 10px; border-radius:20px; cursor:pointer;">🗑️</button>` : ''}
+          </div>
+          <div class="post-text">${escapeHtml(data.text)}</div>
+          ${data.imageUrl ? `<img class="post-image" src="${data.imageUrl}" alt="post image">` : ''}
+          <div class="post-actions">
+            <button class="like-btn" onclick="likePost('${postId}', ${data.likes || 0})">
+              ❤️ <span>${data.likes || 0}</span>
+            </button>
+          </div>
+        `;
+        feed.appendChild(postDiv);
+      });
+    });
+
+    // Защита от XSS
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    console.log("%c🛡️ Сайт защищён! Google Auth + Rules + Storage", "color: green; font-size: 14px");
+  </script>
 </body>
 </html>
